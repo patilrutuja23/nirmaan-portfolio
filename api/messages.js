@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import Message from "./Message.js";
+const mongoose = require("mongoose");
+const Message = require("../server/src/models/Message");
 
 let cached = global.mongoose;
 
@@ -11,16 +11,16 @@ async function connectDB() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-    cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((m) => m);
+    cached.promise = mongoose
+      .connect(process.env.MONGODB_URI)
+      .then((mongoose) => mongoose);
   }
+
   cached.conn = await cached.promise;
   return cached.conn;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     await connectDB();
 
@@ -45,4 +45,4 @@ export default async function handler(req, res) {
     console.error("API error:", err);
     return res.status(500).json({ error: err.message });
   }
-}
+};
