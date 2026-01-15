@@ -71,18 +71,32 @@ export const AIAssistant: React.FC = () => {
     let botResponse = "Sorry, I couldn't generate a response.";
 
     try {
+      console.log("Sending query to /api/gemini:", userMsg);
+      
       const res = await fetch(GEMINI_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: userMsg }),
       });
 
+      console.log("Response status:", res.status, res.statusText);
+
       if (!res.ok) {
         const errorData = await res.json();
-        console.error("Gemini API error:", errorData);
-        botResponse = `Server error: ${errorData.error || "Unknown error"}`;
+        console.error("Gemini API error response:", errorData);
+        botResponse = `⚠️ ${errorData.error || "Server error"}`;
+        if (errorData.details) {
+          console.error("Error details:", errorData.details);
+        }
       } else {
         const data = await res.json();
+        console.log("Gemini response data:", data);
+        botResponse = data.text || botResponse;
+      }
+    } catch (err) {
+      console.error("Gemini fetch error:", err);
+      botResponse = "Network error. Please check your connection.";
+    }
         botResponse = data.text || botResponse;
       }
     } catch (err) {
