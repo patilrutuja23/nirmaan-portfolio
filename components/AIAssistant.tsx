@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, Bot, Sparkles } from "lucide-react";
-import { geminiAssistant } from "../services/geminiService";
 
-// ✅ IMPORTANT: production-safe API URL
-const API_URL = "/api/messages";
+const MESSAGE_API_URL = "/api/messages";
+const GEMINI_API_URL = "/api/gemini";
 
 export const AIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,12 +28,13 @@ export const AIAssistant: React.FC = () => {
     }
   }, [messages, isTyping]);
 
+  // ✅ Save messages to MongoDB (unchanged)
   const saveMessageToDatabase = async (
     userMessage: string,
     botMessage: string
   ) => {
     try {
-      await fetch(API_URL, {
+      await fetch(MESSAGE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -44,7 +44,7 @@ export const AIAssistant: React.FC = () => {
         }),
       });
 
-      await fetch(API_URL, {
+      await fetch(MESSAGE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -58,6 +58,7 @@ export const AIAssistant: React.FC = () => {
     }
   };
 
+  // ✅ Send message & get Gemini reply from BACKEND
   const handleSend = async () => {
     if (!query.trim()) return;
     if (showUserForm && (!userName || !userEmail)) return;
@@ -67,7 +68,21 @@ export const AIAssistant: React.FC = () => {
     setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setIsTyping(true);
 
-    const botResponse = await geminiAssistant.askAboutTeam(userMsg);
+    let botResponse = "Sorry, I couldn't generate a response.";
+
+    try {
+      const res = await fetch(GEMINI_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: userMsg }),
+      });
+
+      const data = await res.json();
+      botResponse = data.text || botResponse;
+    } catch (err) {
+      console.error("Gemini backend error:", err);
+      botResponse = "AI service is temporarily unavailable.";
+    }
 
     setMessages((prev) => [...prev, { role: "bot", text: botResponse }]);
     setIsTyping(false);
