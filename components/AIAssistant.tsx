@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, Bot, Sparkles } from "lucide-react";
-import { geminiAssistant } from "../services/geminiService";
+import { geminiAssistant } from "/services/geminiService";
 
 // ✅ IMPORTANT: production-safe API URL
 const API_URL = "/api/messages";
