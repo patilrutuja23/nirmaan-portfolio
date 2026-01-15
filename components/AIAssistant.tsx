@@ -77,8 +77,14 @@ export const AIAssistant: React.FC = () => {
         body: JSON.stringify({ query: userMsg }),
       });
 
-      const data = await res.json();
-      botResponse = data.text || botResponse;
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Gemini API error:", errorData);
+        botResponse = `Server error: ${errorData.error || "Unknown error"}`;
+      } else {
+        const data = await res.json();
+        botResponse = data.text || botResponse;
+      }
     } catch (err) {
       console.error("Gemini backend error:", err);
       botResponse = "AI service is temporarily unavailable.";

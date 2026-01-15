@@ -1,8 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
-});
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -15,32 +11,23 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Query is required" });
   }
 
-  const systemPrompt = `
-You are the official AI Assistant for Team Nirmaan.
-Nirmaan is a 4-member tech team specializing in AI, Web Development, and Hackathons.
-Always answer professionally, concisely, and enthusiastically.
-Keep answers under 100 words.
-`;
-
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: query,
-      config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.7,
-      },
-    });
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not set in environment");
+      return res.status(500).json({ error: "API key not configured" });
+    }
 
-    return res.status(200).json({
-      text:
-        response.text ||
-        "I'm having trouble generating a response right now.",
-    });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `You are the official AI Assistant for Team Nirmaan, a 4-member tech team specializing in AI, Web Development, and Hackathons. Answer professionally and concisely (under 100 words).\n\nUser: ${query}`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    return res.status(200).json({ text });
   } catch (error) {
-    console.error("Gemini backend error:", error);
-    return res.status(500).json({
-      error: "Gemini backend failed",
-    });
+    console.error("Gemini error:", error);
+    return res.status(500).json({ error: error instanceof Error ? error.message : "AI service failed" });
   }
 }
